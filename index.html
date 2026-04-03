@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MathVault | Solution Repository</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Lora:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/style.css">
+  </head>
+  <body>
+    <!-- Navbar -->
+    <header class="navbar">
+      <div class="container nav-content">
+        <h1 class="logo cursor-pointer" id="nav-logo">MathVault</h1>
+        <div>
+          <button id="btn-login-modal" class="btn btn-outline">Teacher Login</button>
+          <button id="btn-upload-modal" class="btn btn-primary d-none">Upload Question</button>
+          <button id="btn-logout" class="btn btn-text d-none">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- LANDING PAGE VIEW -->
+    <section id="view-landing" class="view-section">
+      <div class="landing-content">
+        <h2>Master Your Mathematics</h2>
+        <p>A comprehensive repository of IB and A-Level mathematics past paper questions, meticulously categorized with step-by-step solutions.</p>
+        <button id="btn-get-started" class="btn btn-primary btn-large">Get Started Now</button>
+      </div>
+    </section>
+
+    <!-- MAIN APP VIEW -->
+    <section id="view-main" class="view-section d-none">
+      <main class="container pt-4">
+        <section class="hero-section" id="hero-section">
+          <h2>Mathematics Solution Repository</h2>
+          <p>Curated solutions for IB and A-Level mathematics. Click the star on any card to bookmark it for your personal revision list.</p>
+        </section>
+
+        <!-- Search & Filters -->
+        <section class="filters-section">
+          <div class="filter-group">
+            <label for="search-input">Search Topics</label>
+            <input type="text" id="search-input" placeholder="e.g. Calculus...">
+          </div>
+          <div class="filter-group">
+            <label for="year-filter">Year / Syllabus</label>
+            <div style="display:flex; gap:10px;">
+              <select id="year-filter" style="flex:1;">
+                <option value="">All Years</option>
+                <option value="2025">2025</option>
+                <option value="2024">2024</option>
+                <option value="2023">2023</option>
+                <option value="2022">2022</option>
+                <option value="2021">2021</option>
+              </select>
+              <select id="syllabus-filter" style="flex:1;">
+                <option value="">All</option>
+                <option value="IB">IB</option>
+                <option value="A-Level">A-Level</option>
+              </select>
+            </div>
+          </div>
+          <div class="filter-group">
+            <label for="month-filter">Month / Difficulty</label>
+            <div style="display:flex; gap:10px;">
+              <select id="month-filter" style="flex:1;">
+                <option value="">All Months</option>
+                <option value="January">January</option>
+                <option value="February">February</option>
+                <option value="March">March</option>
+                <option value="April">April</option>
+                <option value="May">May</option>
+                <option value="June">June</option>
+                <option value="July">July</option>
+                <option value="August">August</option>
+                <option value="September">September</option>
+                <option value="October">October</option>
+                <option value="November">November</option>
+                <option value="December">December</option>
+              </select>
+              <select id="difficulty-filter" style="flex:1;">
+                <option value="">All Difficulties</option>
+                <option value="Easy">Easy</option>
+                <option value="Medium">Medium</option>
+                <option value="Hard">Hard</option>
+                <option value="Challenge">Challenge</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="filter-group bookmark-filter-group" style="justify-content: center; align-items: center; display: flex; flex-direction: row; gap: 10px;">
+            <input type="checkbox" id="bookmark-filter" style="width: 20px; height: 20px; cursor: pointer;">
+            <label for="bookmark-filter" style="margin:0; cursor:pointer;">Bookmarks</label>
+          </div>
+        </section>
+
+        <!-- Loading State -->
+        <div id="loading-spinner" class="loading-spinner d-none">
+          <div class="spinner"></div>
+        </div>
+
+        <!-- Grid Container -->
+        <section id="questions-grid" class="questions-grid">
+          <!-- Cards will be populated here via JS -->
+        </section>
+        
+        <div id="no-results" class="no-results d-none">
+          <p>No questions found. Try adjusting your filters.</p>
+        </div>
+
+        <!-- Pagination -->
+        <div class="text-center" style="text-align: center; margin-top: 20px; padding-bottom: 50px;">
+          <button id="btn-load-more" class="btn btn-outline btn-large d-none">Load More Questions</button>
+        </div>
+
+      </main>
+    </section>
+
+    <!-- MODALS -->
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal-overlay d-none">
+      <div class="modal">
+        <span class="close-modal" data-target="login-modal">&times;</span>
+        <h3 class="modal-title">Teacher Login</h3>
+        <p class="modal-subtitle">Enter password to enable upload and edit mode.</p>
+        <form id="login-form">
+          <div class="form-group">
+            <label for="teacher-password">Password</label>
+            <input type="password" id="teacher-password" placeholder="Hint: password is 'mypassword'">
+            <div id="login-error" class="error-msg d-none">Incorrect password.</div>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">Login</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="upload-modal" class="modal-overlay d-none">
+      <div class="modal">
+        <span class="close-modal" data-target="upload-modal">&times;</span>
+        <h3 class="modal-title">Upload New Question</h3>
+        <form id="upload-form">
+          <div class="form-group" style="display:flex; gap:15px;">
+            <div style="flex:1;">
+              <label for="upload-syllabus">Syllabus</label>
+              <select id="upload-syllabus" required>
+                <option value="" disabled selected>Select Syllabus</option>
+                <option value="IB">IB</option>
+                <option value="A-Level">A-Level</option>
+              </select>
+            </div>
+            <div style="flex:1;">
+              <label for="upload-difficulty">Difficulty</label>
+              <select id="upload-difficulty">
+                <option value="">None</option>
+                <option value="Easy">Easy</option>
+                <option value="Medium">Medium</option>
+                <option value="Hard">Hard</option>
+                <option value="Challenge">Challenge</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="upload-topic">Topic</label>
+            <input type="text" id="upload-topic" placeholder="e.g. Vectors, Probability" required>
+          </div>
+          <div class="form-group" style="display:flex; gap:15px;">
+            <div style="flex:1;">
+              <label for="upload-month">Month</label>
+              <select id="upload-month">
+                <option value="">None</option>
+                <option value="January">January</option>
+                <option value="February">February</option>
+                <option value="March">March</option>
+                <option value="April">April</option>
+                <option value="May">May</option>
+                <option value="June">June</option>
+                <option value="July">July</option>
+                <option value="August">August</option>
+                <option value="September">September</option>
+                <option value="October">October</option>
+                <option value="November">November</option>
+                <option value="December">December</option>
+              </select>
+            </div>
+            <div style="flex:1;">
+              <label for="upload-year">Year</label>
+              <input type="number" id="upload-year" placeholder="e.g. 2024" min="1990" max="2100" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="upload-question-file">Question Image</label>
+            <input type="file" id="upload-question-file" accept="image/*" required>
+          </div>
+          <div class="form-group">
+            <label for="upload-solution-file">Solution Image</label>
+            <input type="file" id="upload-solution-file" accept="image/*" required>
+          </div>
+          <div id="upload-error" class="error-msg d-none"></div>
+          <div id="upload-success" class="success-msg d-none">Upload successful!</div>
+          <button type="submit" id="btn-submit-upload" class="btn btn-primary w-100">Upload & Save</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="modal-overlay d-none">
+      <div class="modal">
+        <span class="close-modal" data-target="edit-modal">&times;</span>
+        <h3 class="modal-title">Edit Question Details</h3>
+        <form id="edit-form">
+          <input type="hidden" id="edit-id">
+          <div class="form-group" style="display:flex; gap:15px;">
+            <div style="flex:1;">
+              <label for="edit-syllabus">Syllabus</label>
+              <select id="edit-syllabus" required>
+                <option value="IB">IB</option>
+                <option value="A-Level">A-Level</option>
+              </select>
+            </div>
+            <div style="flex:1;">
+              <label for="edit-difficulty">Difficulty</label>
+              <select id="edit-difficulty">
+                <option value="">None</option>
+                <option value="Easy">Easy</option>
+                <option value="Medium">Medium</option>
+                <option value="Hard">Hard</option>
+                <option value="Challenge">Challenge</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="edit-topic">Topic</label>
+            <input type="text" id="edit-topic" required>
+          </div>
+          <div class="form-group" style="display:flex; gap:15px;">
+            <div style="flex:1;">
+              <label for="edit-month">Month</label>
+              <select id="edit-month">
+                <option value="">None</option>
+                <option value="January">January</option>
+                <option value="February">February</option>
+                <option value="March">March</option>
+                <option value="April">April</option>
+                <option value="May">May</option>
+                <option value="June">June</option>
+                <option value="July">July</option>
+                <option value="August">August</option>
+                <option value="September">September</option>
+                <option value="October">October</option>
+                <option value="November">November</option>
+                <option value="December">December</option>
+              </select>
+            </div>
+            <div style="flex:1;">
+              <label for="edit-year">Year</label>
+              <input type="number" id="edit-year" min="1990" max="2100" required>
+            </div>
+          </div>
+          <div id="edit-error" class="error-msg d-none"></div>
+          <div id="edit-success" class="success-msg d-none">Updated successfully!</div>
+          <button type="submit" id="btn-submit-edit" class="btn btn-primary w-100">Save Changes</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Detail Question Modal -->
+    <div id="detail-modal" class="modal-overlay d-none">
+      <div class="modal modal-wide">
+        <span class="close-modal" data-target="detail-modal">&times;</span>
+        
+        <div class="detail-header">
+           <h3 id="detail-title" class="modal-title m-0">Question</h3>
+           <div id="detail-tags" class="card-tags m-0" style="margin-bottom: 15px;"></div>
+        </div>
+        
+        <div class="detail-body">
+          <div class="detail-image-box">
+             <h4 class="mb-2">Question <span style="font-size: 0.8rem; font-weight: normal; color: #666;">(Double-click or interact to zoom)</span></h4>
+             <div class="zoom-container">
+               <img id="detail-question-img" class="zoomable-image" src="" alt="Question" />
+             </div>
+          </div>
+
+          <div class="detail-actions" style="display: flex; gap: 10px; justify-content: center; margin-bottom: 10px;">
+            <button id="btn-reveal-solution" class="btn btn-primary" style="flex: 2;">View Answer</button>
+            <button id="btn-copy-link" class="btn btn-outline" style="flex: 1;">🔗 Copy Link</button>
+          </div>
+          
+          <div id="solution-container" class="detail-image-box d-none">
+             <h4 class="mb-2">Solution <span style="font-size: 0.8rem; font-weight: normal; color: #666;">(Double-click or interact to zoom)</span></h4>
+             <div class="zoom-container">
+               <img id="detail-solution-img" class="zoomable-image" src="" alt="Solution" />
+             </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
