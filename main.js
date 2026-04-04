@@ -30,6 +30,7 @@ const monthFilter = document.getElementById('month-filter');
 const syllabusFilter = document.getElementById('syllabus-filter');
 const difficultyFilter = document.getElementById('difficulty-filter');
 const bookmarkFilter = document.getElementById('bookmark-filter');
+const btnResetFilters = document.getElementById('btn-reset-filters');
 
 const detailTitle = document.getElementById('detail-title');
 const detailTags = document.getElementById('detail-tags');
@@ -56,6 +57,12 @@ let bookmarks = JSON.parse(localStorage.getItem('mzizimamath_bookmarks') || '[]'
 // Deep Linking Check
 const urlParams = new URLSearchParams(window.location.search);
 const questionIdFromUrl = urlParams.get('id');
+
+function toTitleCase(str) {
+  return str.trim().split(' ').map(word => 
+     word ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : ''
+  ).join(' ');
+}
 
 // --- Initialization ---
 async function init() {
@@ -200,7 +207,10 @@ function renderQuestions(data, isReset) {
         e.stopPropagation();
         if (confirm('Delete this question permanently?')) {
           const { error } = await supabase.from('questions').delete().eq('id', q.id);
-          if (!error) fetchQuestions(true);
+          if (!error) {
+            await supabase.storage.from('math_assets').remove([q.question_url, q.solution_url]);
+            fetchQuestions(true);
+          }
         }
         return;
       }
@@ -330,6 +340,16 @@ function setupEventListeners() {
   difficultyFilter.addEventListener('change', refetch);
   bookmarkFilter.addEventListener('change', refetch);
 
+  btnResetFilters.addEventListener('click', () => {
+    searchInput.value = '';
+    yearFilter.value = '';
+    monthFilter.value = '';
+    syllabusFilter.value = '';
+    difficultyFilter.value = '';
+    bookmarkFilter.checked = false;
+    fetchQuestions(true);
+  });
+
   // Forms
   loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -349,7 +369,7 @@ function setupEventListeners() {
     btnSubmitUpload.disabled = true; btnSubmitUpload.textContent = 'Uploading...';
 
     const syllabus = document.getElementById('upload-syllabus').value;
-    const topic = document.getElementById('upload-topic').value;
+    const topic = toTitleCase(document.getElementById('upload-topic').value);
     const year = parseInt(document.getElementById('upload-year').value);
     const month = document.getElementById('upload-month').value || null;
     const difficulty = document.getElementById('upload-difficulty').value || null;
@@ -386,7 +406,7 @@ function setupEventListeners() {
     const id = document.getElementById('edit-id').value;
     const payload = {
       syllabus: document.getElementById('edit-syllabus').value,
-      topic: document.getElementById('edit-topic').value,
+      topic: toTitleCase(document.getElementById('edit-topic').value),
       year: parseInt(document.getElementById('edit-year').value),
       month: document.getElementById('edit-month').value || null,
       difficulty: document.getElementById('edit-difficulty').value || null
