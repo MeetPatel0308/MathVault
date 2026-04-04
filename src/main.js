@@ -333,7 +333,7 @@ function setupEventListeners() {
   // Forms
   loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    if (document.getElementById('teacher-password').value === 'mypassword') {
+    if (document.getElementById('teacher-password').value === 'euler2718') {
       isTeacherMode = true; document.getElementById('login-error').classList.add('d-none');
       closeModal(loginModal); loginForm.reset();
       btnLoginModal.classList.add('d-none'); btnUploadModal.classList.remove('d-none'); btnLogout.classList.remove('d-none');
