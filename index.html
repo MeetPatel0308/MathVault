@@ -195,12 +195,22 @@
             </div>
           </div>
           <div class="form-group">
-            <label for="upload-question-file">Question Image(s)</label>
-            <input type="file" id="upload-question-file" accept="image/*" multiple required>
+            <label>Question Image(s)</label>
+            <div id="question-files-container">
+              <div class="file-input-wrapper" style="display:flex; gap:10px; margin-bottom:10px;">
+                <input type="file" class="upload-question-file" accept="image/*" required style="flex:1;">
+              </div>
+            </div>
+            <button type="button" id="btn-add-question-file" class="btn btn-outline btn-small w-100" style="padding: 8px;">+ Add Another Question Image</button>
           </div>
           <div class="form-group">
-            <label for="upload-solution-file">Solution Image(s)</label>
-            <input type="file" id="upload-solution-file" accept="image/*" multiple required>
+            <label>Solution Image(s)</label>
+            <div id="solution-files-container">
+              <div class="file-input-wrapper" style="display:flex; gap:10px; margin-bottom:10px;">
+                <input type="file" class="upload-solution-file" accept="image/*" required style="flex:1;">
+              </div>
+            </div>
+            <button type="button" id="btn-add-solution-file" class="btn btn-outline btn-small w-100" style="padding: 8px;">+ Add Another Solution Image</button>
           </div>
           <div id="upload-error" class="error-msg d-none"></div>
           <div id="upload-success" class="success-msg d-none">Upload successful!</div>

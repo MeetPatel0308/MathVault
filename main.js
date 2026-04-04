@@ -39,6 +39,11 @@ const detailSolutionImages = document.getElementById('detail-solution-images');
 const btnRevealSolution = document.getElementById('btn-reveal-solution');
 const btnCopyLink = document.getElementById('btn-copy-link');
 
+const btnAddQuestionFile = document.getElementById('btn-add-question-file');
+const btnAddSolutionFile = document.getElementById('btn-add-solution-file');
+const questionFilesContainer = document.getElementById('question-files-container');
+const solutionFilesContainer = document.getElementById('solution-files-container');
+
 const uploadError = document.getElementById('upload-error');
 const uploadSuccess = document.getElementById('upload-success');
 const btnSubmitUpload = document.getElementById('btn-submit-upload');
@@ -356,6 +361,22 @@ function setupEventListeners() {
   difficultyFilter.addEventListener('change', refetch);
   bookmarkFilter.addEventListener('change', refetch);
 
+  btnAddQuestionFile.addEventListener('click', () => {
+    const div = document.createElement('div');
+    div.className = 'file-input-wrapper';
+    div.style.cssText = 'display:flex; gap:10px; margin-bottom:10px;';
+    div.innerHTML = `<input type="file" class="upload-question-file" accept="image/*" required style="flex:1;"><button type="button" class="btn btn-danger btn-small" onclick="this.parentElement.remove()" style="padding: 0 10px;">X</button>`;
+    questionFilesContainer.appendChild(div);
+  });
+
+  btnAddSolutionFile.addEventListener('click', () => {
+    const div = document.createElement('div');
+    div.className = 'file-input-wrapper';
+    div.style.cssText = 'display:flex; gap:10px; margin-bottom:10px;';
+    div.innerHTML = `<input type="file" class="upload-solution-file" accept="image/*" required style="flex:1;"><button type="button" class="btn btn-danger btn-small" onclick="this.parentElement.remove()" style="padding: 0 10px;">X</button>`;
+    solutionFilesContainer.appendChild(div);
+  });
+
   // Forms
   loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -379,20 +400,28 @@ function setupEventListeners() {
     const year = parseInt(document.getElementById('upload-year').value);
     const month = document.getElementById('upload-month').value || null;
     const difficulty = document.getElementById('upload-difficulty').value || null;
-    const qFiles = document.getElementById('upload-question-file').files;
-    const sFiles = document.getElementById('upload-solution-file').files;
+    
+    // Extract actual files
+    const qFileInputs = document.querySelectorAll('.upload-question-file');
+    const sFileInputs = document.querySelectorAll('.upload-solution-file');
+    const qFiles = [];
+    qFileInputs.forEach(input => { if(input.files[0]) qFiles.push(input.files[0]); });
+    const sFiles = [];
+    sFileInputs.forEach(input => { if(input.files[0]) sFiles.push(input.files[0]); });
 
     try {
       let qPaths = [];
       for(let i = 0; i < qFiles.length; i++) {
-        const { data: qData, error: qErr } = await supabase.storage.from('math_assets').upload(`questions/${Date.now()}_${i}_${qFiles[i].name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`, qFiles[i]);
+        const file = qFiles[i];
+        const { data: qData, error: qErr } = await supabase.storage.from('math_assets').upload(`questions/${Date.now()}_${i}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`, file);
         if (qErr) throw qErr;
         qPaths.push(qData.path);
       }
 
       let sPaths = [];
       for(let i = 0; i < sFiles.length; i++) {
-        const { data: sData, error: sErr } = await supabase.storage.from('math_assets').upload(`solutions/${Date.now()}_${i}_${sFiles[i].name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`, sFiles[i]);
+        const file = sFiles[i];
+        const { data: sData, error: sErr } = await supabase.storage.from('math_assets').upload(`solutions/${Date.now()}_${i}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`, file);
         if (sErr) throw sErr;
         sPaths.push(sData.path);
       }
@@ -403,7 +432,11 @@ function setupEventListeners() {
       }]);
       if (dbError) throw dbError;
 
-      uploadSuccess.classList.remove('d-none'); uploadForm.reset();
+      uploadSuccess.classList.remove('d-none'); 
+      uploadForm.reset();
+      questionFilesContainer.innerHTML = '<div class="file-input-wrapper" style="display:flex; gap:10px; margin-bottom:10px;"><input type="file" class="upload-question-file" accept="image/*" required style="flex:1;"></div>';
+      solutionFilesContainer.innerHTML = '<div class="file-input-wrapper" style="display:flex; gap:10px; margin-bottom:10px;"><input type="file" class="upload-solution-file" accept="image/*" required style="flex:1;"></div>';
+      
       await fetchQuestions(true);
       setTimeout(() => { closeModal(uploadModal); uploadSuccess.classList.add('d-none'); }, 1500);
     } catch (err) {
