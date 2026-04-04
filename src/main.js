@@ -51,7 +51,7 @@ const btnSubmitEdit = document.getElementById('btn-submit-edit');
 let isTeacherMode = false;
 let currentOffset = 0;
 const LIMIT = 12;
-let bookmarks = JSON.parse(localStorage.getItem('mathvault_bookmarks') || '[]');
+let bookmarks = JSON.parse(localStorage.getItem('mzizimamath_bookmarks') || '[]');
 
 // Deep Linking Check
 const urlParams = new URLSearchParams(window.location.search);
@@ -227,7 +227,7 @@ function toggleBookmark(id, element) {
     element.textContent = '★';
     element.classList.add('bookmarked');
   }
-  localStorage.setItem('mathvault_bookmarks', JSON.stringify(bookmarks));
+  localStorage.setItem('mzizimamath_bookmarks', JSON.stringify(bookmarks));
   
   // If we are currently sorting by bookmarks, remove the card if unstarred
   if (bookmarkFilter.checked) {
