@@ -30,7 +30,6 @@ const monthFilter = document.getElementById('month-filter');
 const syllabusFilter = document.getElementById('syllabus-filter');
 const difficultyFilter = document.getElementById('difficulty-filter');
 const bookmarkFilter = document.getElementById('bookmark-filter');
-const btnResetFilters = document.getElementById('btn-reset-filters');
 
 const detailTitle = document.getElementById('detail-title');
 const detailTags = document.getElementById('detail-tags');
@@ -339,16 +338,6 @@ function setupEventListeners() {
   syllabusFilter.addEventListener('change', refetch);
   difficultyFilter.addEventListener('change', refetch);
   bookmarkFilter.addEventListener('change', refetch);
-
-  btnResetFilters.addEventListener('click', () => {
-    searchInput.value = '';
-    yearFilter.value = '';
-    monthFilter.value = '';
-    syllabusFilter.value = '';
-    difficultyFilter.value = '';
-    bookmarkFilter.checked = false;
-    fetchQuestions(true);
-  });
 
   // Forms
   loginForm.addEventListener('submit', (e) => {
