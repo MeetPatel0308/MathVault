@@ -33,11 +33,16 @@ const bookmarkFilter = document.getElementById('bookmark-filter');
 
 const detailTitle = document.getElementById('detail-title');
 const detailTags = document.getElementById('detail-tags');
-const detailQuestionImg = document.getElementById('detail-question-img');
+const detailQuestionImages = document.getElementById('detail-question-images');
 const solutionContainer = document.getElementById('solution-container');
-const detailSolutionImg = document.getElementById('detail-solution-img');
+const detailSolutionImages = document.getElementById('detail-solution-images');
 const btnRevealSolution = document.getElementById('btn-reveal-solution');
 const btnCopyLink = document.getElementById('btn-copy-link');
+
+const btnAddQuestionFile = document.getElementById('btn-add-question-file');
+const btnAddSolutionFile = document.getElementById('btn-add-solution-file');
+const questionFilesContainer = document.getElementById('question-files-container');
+const solutionFilesContainer = document.getElementById('solution-files-container');
 
 const uploadError = document.getElementById('upload-error');
 const uploadSuccess = document.getElementById('upload-success');
@@ -56,6 +61,12 @@ let bookmarks = JSON.parse(localStorage.getItem('mzizimamath_bookmarks') || '[]'
 // Deep Linking Check
 const urlParams = new URLSearchParams(window.location.search);
 const questionIdFromUrl = urlParams.get('id');
+
+function toTitleCase(str) {
+  return str.trim().split(' ').map(word => 
+     word ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : ''
+  ).join(' ');
+}
 
 // --- Initialization ---
 async function init() {
@@ -139,9 +150,7 @@ async function fetchQuestions(reset = false) {
 async function fetchSingleQuestion(id) {
   const { data, error } = await supabase.from('questions').select('*').eq('id', id).single();
   if (!error && data) {
-    const qUrl = supabase.storage.from('math_assets').getPublicUrl(data.question_url).data.publicUrl;
-    const sUrl = supabase.storage.from('math_assets').getPublicUrl(data.solution_url).data.publicUrl;
-    openDetailModal(data, qUrl, sUrl);
+    openDetailModal(data);
   }
 }
 
@@ -156,8 +165,10 @@ function renderQuestions(data, isReset) {
     const card = document.createElement('div');
     card.className = 'card';
     
-    const { data: qImgData } = supabase.storage.from('math_assets').getPublicUrl(q.question_url);
-    const { data: sImgData } = supabase.storage.from('math_assets').getPublicUrl(q.solution_url);
+    const qFirst = q.question_url.split(',')[0];
+    const sFirst = q.solution_url.split(',')[0];
+    const { data: qImgData } = supabase.storage.from('math_assets').getPublicUrl(qFirst);
+    const { data: sImgData } = supabase.storage.from('math_assets').getPublicUrl(sFirst);
 
     let tagsHtml = `<span class="tag tag-syllabus">${q.syllabus}</span><span class="tag tag-year">${q.year}</span>`;
     if (q.month) tagsHtml += `<span class="tag tag-month">${q.month}</span>`;
@@ -200,7 +211,11 @@ function renderQuestions(data, isReset) {
         e.stopPropagation();
         if (confirm('Delete this question permanently?')) {
           const { error } = await supabase.from('questions').delete().eq('id', q.id);
-          if (!error) fetchQuestions(true);
+          if (!error) {
+            const pathsToDel = [...q.question_url.split(','), ...q.solution_url.split(',')];
+            await supabase.storage.from('math_assets').remove(pathsToDel);
+            fetchQuestions(true);
+          }
         }
         return;
       }
@@ -210,7 +225,7 @@ function renderQuestions(data, isReset) {
         return;
       }
       
-      openDetailModal(q, qImgData.publicUrl, sImgData.publicUrl);
+      openDetailModal(q);
     });
 
     grid.appendChild(card);
@@ -236,17 +251,33 @@ function toggleBookmark(id, element) {
 }
 
 // --- Detail View Logic ---
-function openDetailModal(q, qUrl, sUrl) {
+function openDetailModal(q) {
     let tagsHtml = `<span class="tag tag-syllabus">${q.syllabus}</span><span class="tag tag-year">${q.year}</span>`;
     if (q.month) tagsHtml += `<span class="tag tag-month">${q.month}</span>`;
     if (q.difficulty) tagsHtml += `<span class="tag tag-difficulty-${q.difficulty}">${q.difficulty}</span>`;
     
     detailTitle.textContent = q.topic;
     detailTags.innerHTML = tagsHtml;
-    detailQuestionImg.src = qUrl;
-    detailSolutionImg.src = sUrl;
-    detailQuestionImg.classList.remove('zoomed');
-    detailSolutionImg.classList.remove('zoomed');
+    
+    detailQuestionImages.innerHTML = '';
+    const qUrls = q.question_url.split(',');
+    qUrls.forEach(urlPath => {
+       const url = supabase.storage.from('math_assets').getPublicUrl(urlPath).data.publicUrl;
+       detailQuestionImages.innerHTML += `<img class="zoomable-image" src="${url}" alt="Question" style="width:100%; margin-bottom:10px; border-radius:8px;" />`;
+    });
+
+    detailSolutionImages.innerHTML = '';
+    const sUrls = q.solution_url.split(',');
+    sUrls.forEach(urlPath => {
+       const url = supabase.storage.from('math_assets').getPublicUrl(urlPath).data.publicUrl;
+       detailSolutionImages.innerHTML += `<img class="zoomable-image" src="${url}" alt="Solution" style="width:100%; margin-bottom:10px; border-radius:8px;" />`;
+    });
+
+    document.querySelectorAll('#detail-modal .zoomable-image').forEach(img => {
+      img.addEventListener('click', () => {
+        img.classList.toggle('zoomed');
+      });
+    });
     
     // Copy link metadata
     btnCopyLink.dataset.link = window.location.origin + window.location.pathname + '?id=' + q.id;
@@ -330,10 +361,26 @@ function setupEventListeners() {
   difficultyFilter.addEventListener('change', refetch);
   bookmarkFilter.addEventListener('change', refetch);
 
+  btnAddQuestionFile.addEventListener('click', () => {
+    const div = document.createElement('div');
+    div.className = 'file-input-wrapper';
+    div.style.cssText = 'display:flex; gap:10px; margin-bottom:10px;';
+    div.innerHTML = `<input type="file" class="upload-question-file" accept="image/*" required style="flex:1;"><button type="button" class="btn btn-danger btn-small" onclick="this.parentElement.remove()" style="padding: 0 10px;">X</button>`;
+    questionFilesContainer.appendChild(div);
+  });
+
+  btnAddSolutionFile.addEventListener('click', () => {
+    const div = document.createElement('div');
+    div.className = 'file-input-wrapper';
+    div.style.cssText = 'display:flex; gap:10px; margin-bottom:10px;';
+    div.innerHTML = `<input type="file" class="upload-solution-file" accept="image/*" required style="flex:1;"><button type="button" class="btn btn-danger btn-small" onclick="this.parentElement.remove()" style="padding: 0 10px;">X</button>`;
+    solutionFilesContainer.appendChild(div);
+  });
+
   // Forms
   loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    if (document.getElementById('teacher-password').value === 'euler2718') {
+    if (document.getElementById('teacher-password').value.trim() === 'euler2718') {
       isTeacherMode = true; document.getElementById('login-error').classList.add('d-none');
       closeModal(loginModal); loginForm.reset();
       btnLoginModal.classList.add('d-none'); btnUploadModal.classList.remove('d-none'); btnLogout.classList.remove('d-none');
@@ -349,26 +396,47 @@ function setupEventListeners() {
     btnSubmitUpload.disabled = true; btnSubmitUpload.textContent = 'Uploading...';
 
     const syllabus = document.getElementById('upload-syllabus').value;
-    const topic = document.getElementById('upload-topic').value;
+    const topic = toTitleCase(document.getElementById('upload-topic').value);
     const year = parseInt(document.getElementById('upload-year').value);
     const month = document.getElementById('upload-month').value || null;
     const difficulty = document.getElementById('upload-difficulty').value || null;
-    const qFile = document.getElementById('upload-question-file').files[0];
-    const sFile = document.getElementById('upload-solution-file').files[0];
+    
+    // Extract actual files
+    const qFileInputs = document.querySelectorAll('.upload-question-file');
+    const sFileInputs = document.querySelectorAll('.upload-solution-file');
+    const qFiles = [];
+    qFileInputs.forEach(input => { if(input.files[0]) qFiles.push(input.files[0]); });
+    const sFiles = [];
+    sFileInputs.forEach(input => { if(input.files[0]) sFiles.push(input.files[0]); });
 
     try {
-      const { data: qData, error: qErr } = await supabase.storage.from('math_assets').upload(`questions/${Date.now()}_${qFile.name}`, qFile);
-      if (qErr) throw qErr;
-      const { data: sData, error: sErr } = await supabase.storage.from('math_assets').upload(`solutions/${Date.now()}_${sFile.name}`, sFile);
-      if (sErr) throw sErr;
+      let qPaths = [];
+      for(let i = 0; i < qFiles.length; i++) {
+        const file = qFiles[i];
+        const { data: qData, error: qErr } = await supabase.storage.from('math_assets').upload(`questions/${Date.now()}_${i}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`, file);
+        if (qErr) throw qErr;
+        qPaths.push(qData.path);
+      }
+
+      let sPaths = [];
+      for(let i = 0; i < sFiles.length; i++) {
+        const file = sFiles[i];
+        const { data: sData, error: sErr } = await supabase.storage.from('math_assets').upload(`solutions/${Date.now()}_${i}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`, file);
+        if (sErr) throw sErr;
+        sPaths.push(sData.path);
+      }
 
       const { error: dbError } = await supabase.from('questions').insert([{
           syllabus, topic, year, month, difficulty,
-          question_url: qData.path, solution_url: sData.path
+          question_url: qPaths.join(','), solution_url: sPaths.join(',')
       }]);
       if (dbError) throw dbError;
 
-      uploadSuccess.classList.remove('d-none'); uploadForm.reset();
+      uploadSuccess.classList.remove('d-none'); 
+      uploadForm.reset();
+      questionFilesContainer.innerHTML = '<div class="file-input-wrapper" style="display:flex; gap:10px; margin-bottom:10px;"><input type="file" class="upload-question-file" accept="image/*" required style="flex:1;"></div>';
+      solutionFilesContainer.innerHTML = '<div class="file-input-wrapper" style="display:flex; gap:10px; margin-bottom:10px;"><input type="file" class="upload-solution-file" accept="image/*" required style="flex:1;"></div>';
+      
       await fetchQuestions(true);
       setTimeout(() => { closeModal(uploadModal); uploadSuccess.classList.add('d-none'); }, 1500);
     } catch (err) {
@@ -386,7 +454,7 @@ function setupEventListeners() {
     const id = document.getElementById('edit-id').value;
     const payload = {
       syllabus: document.getElementById('edit-syllabus').value,
-      topic: document.getElementById('edit-topic').value,
+      topic: toTitleCase(document.getElementById('edit-topic').value),
       year: parseInt(document.getElementById('edit-year').value),
       month: document.getElementById('edit-month').value || null,
       difficulty: document.getElementById('edit-difficulty').value || null
