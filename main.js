@@ -33,9 +33,9 @@ const bookmarkFilter = document.getElementById('bookmark-filter');
 
 const detailTitle = document.getElementById('detail-title');
 const detailTags = document.getElementById('detail-tags');
-const detailQuestionImg = document.getElementById('detail-question-img');
+const detailQuestionImages = document.getElementById('detail-question-images');
 const solutionContainer = document.getElementById('solution-container');
-const detailSolutionImg = document.getElementById('detail-solution-img');
+const detailSolutionImages = document.getElementById('detail-solution-images');
 const btnRevealSolution = document.getElementById('btn-reveal-solution');
 const btnCopyLink = document.getElementById('btn-copy-link');
 
@@ -145,9 +145,7 @@ async function fetchQuestions(reset = false) {
 async function fetchSingleQuestion(id) {
   const { data, error } = await supabase.from('questions').select('*').eq('id', id).single();
   if (!error && data) {
-    const qUrl = supabase.storage.from('math_assets').getPublicUrl(data.question_url).data.publicUrl;
-    const sUrl = supabase.storage.from('math_assets').getPublicUrl(data.solution_url).data.publicUrl;
-    openDetailModal(data, qUrl, sUrl);
+    openDetailModal(data);
   }
 }
 
@@ -162,8 +160,10 @@ function renderQuestions(data, isReset) {
     const card = document.createElement('div');
     card.className = 'card';
     
-    const { data: qImgData } = supabase.storage.from('math_assets').getPublicUrl(q.question_url);
-    const { data: sImgData } = supabase.storage.from('math_assets').getPublicUrl(q.solution_url);
+    const qFirst = q.question_url.split(',')[0];
+    const sFirst = q.solution_url.split(',')[0];
+    const { data: qImgData } = supabase.storage.from('math_assets').getPublicUrl(qFirst);
+    const { data: sImgData } = supabase.storage.from('math_assets').getPublicUrl(sFirst);
 
     let tagsHtml = `<span class="tag tag-syllabus">${q.syllabus}</span><span class="tag tag-year">${q.year}</span>`;
     if (q.month) tagsHtml += `<span class="tag tag-month">${q.month}</span>`;
@@ -207,7 +207,8 @@ function renderQuestions(data, isReset) {
         if (confirm('Delete this question permanently?')) {
           const { error } = await supabase.from('questions').delete().eq('id', q.id);
           if (!error) {
-            await supabase.storage.from('math_assets').remove([q.question_url, q.solution_url]);
+            const pathsToDel = [...q.question_url.split(','), ...q.solution_url.split(',')];
+            await supabase.storage.from('math_assets').remove(pathsToDel);
             fetchQuestions(true);
           }
         }
@@ -219,7 +220,7 @@ function renderQuestions(data, isReset) {
         return;
       }
       
-      openDetailModal(q, qImgData.publicUrl, sImgData.publicUrl);
+      openDetailModal(q);
     });
 
     grid.appendChild(card);
@@ -245,17 +246,33 @@ function toggleBookmark(id, element) {
 }
 
 // --- Detail View Logic ---
-function openDetailModal(q, qUrl, sUrl) {
+function openDetailModal(q) {
     let tagsHtml = `<span class="tag tag-syllabus">${q.syllabus}</span><span class="tag tag-year">${q.year}</span>`;
     if (q.month) tagsHtml += `<span class="tag tag-month">${q.month}</span>`;
     if (q.difficulty) tagsHtml += `<span class="tag tag-difficulty-${q.difficulty}">${q.difficulty}</span>`;
     
     detailTitle.textContent = q.topic;
     detailTags.innerHTML = tagsHtml;
-    detailQuestionImg.src = qUrl;
-    detailSolutionImg.src = sUrl;
-    detailQuestionImg.classList.remove('zoomed');
-    detailSolutionImg.classList.remove('zoomed');
+    
+    detailQuestionImages.innerHTML = '';
+    const qUrls = q.question_url.split(',');
+    qUrls.forEach(urlPath => {
+       const url = supabase.storage.from('math_assets').getPublicUrl(urlPath).data.publicUrl;
+       detailQuestionImages.innerHTML += `<img class="zoomable-image" src="${url}" alt="Question" style="width:100%; margin-bottom:10px; border-radius:8px;" />`;
+    });
+
+    detailSolutionImages.innerHTML = '';
+    const sUrls = q.solution_url.split(',');
+    sUrls.forEach(urlPath => {
+       const url = supabase.storage.from('math_assets').getPublicUrl(urlPath).data.publicUrl;
+       detailSolutionImages.innerHTML += `<img class="zoomable-image" src="${url}" alt="Solution" style="width:100%; margin-bottom:10px; border-radius:8px;" />`;
+    });
+
+    document.querySelectorAll('#detail-modal .zoomable-image').forEach(img => {
+      img.addEventListener('click', () => {
+        img.classList.toggle('zoomed');
+      });
+    });
     
     // Copy link metadata
     btnCopyLink.dataset.link = window.location.origin + window.location.pathname + '?id=' + q.id;
@@ -362,18 +379,27 @@ function setupEventListeners() {
     const year = parseInt(document.getElementById('upload-year').value);
     const month = document.getElementById('upload-month').value || null;
     const difficulty = document.getElementById('upload-difficulty').value || null;
-    const qFile = document.getElementById('upload-question-file').files[0];
-    const sFile = document.getElementById('upload-solution-file').files[0];
+    const qFiles = document.getElementById('upload-question-file').files;
+    const sFiles = document.getElementById('upload-solution-file').files;
 
     try {
-      const { data: qData, error: qErr } = await supabase.storage.from('math_assets').upload(`questions/${Date.now()}_${qFile.name}`, qFile);
-      if (qErr) throw qErr;
-      const { data: sData, error: sErr } = await supabase.storage.from('math_assets').upload(`solutions/${Date.now()}_${sFile.name}`, sFile);
-      if (sErr) throw sErr;
+      let qPaths = [];
+      for(let i = 0; i < qFiles.length; i++) {
+        const { data: qData, error: qErr } = await supabase.storage.from('math_assets').upload(`questions/${Date.now()}_${i}_${qFiles[i].name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`, qFiles[i]);
+        if (qErr) throw qErr;
+        qPaths.push(qData.path);
+      }
+
+      let sPaths = [];
+      for(let i = 0; i < sFiles.length; i++) {
+        const { data: sData, error: sErr } = await supabase.storage.from('math_assets').upload(`solutions/${Date.now()}_${i}_${sFiles[i].name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`, sFiles[i]);
+        if (sErr) throw sErr;
+        sPaths.push(sData.path);
+      }
 
       const { error: dbError } = await supabase.from('questions').insert([{
           syllabus, topic, year, month, difficulty,
-          question_url: qData.path, solution_url: sData.path
+          question_url: qPaths.join(','), solution_url: sPaths.join(',')
       }]);
       if (dbError) throw dbError;
 

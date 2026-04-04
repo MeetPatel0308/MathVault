@@ -195,12 +195,12 @@
             </div>
           </div>
           <div class="form-group">
-            <label for="upload-question-file">Question Image</label>
-            <input type="file" id="upload-question-file" accept="image/*" required>
+            <label for="upload-question-file">Question Image(s)</label>
+            <input type="file" id="upload-question-file" accept="image/*" multiple required>
           </div>
           <div class="form-group">
-            <label for="upload-solution-file">Solution Image</label>
-            <input type="file" id="upload-solution-file" accept="image/*" required>
+            <label for="upload-solution-file">Solution Image(s)</label>
+            <input type="file" id="upload-solution-file" accept="image/*" multiple required>
           </div>
           <div id="upload-error" class="error-msg d-none"></div>
           <div id="upload-success" class="success-msg d-none">Upload successful!</div>
@@ -283,8 +283,7 @@
         <div class="detail-body">
           <div class="detail-image-box">
              <h4 class="mb-2">Question <span style="font-size: 0.8rem; font-weight: normal; color: #666;">(Double-click or interact to zoom)</span></h4>
-             <div class="zoom-container">
-               <img id="detail-question-img" class="zoomable-image" src="" alt="Question" />
+             <div class="zoom-container" id="detail-question-images">
              </div>
           </div>
 
@@ -295,8 +294,7 @@
           
           <div id="solution-container" class="detail-image-box d-none">
              <h4 class="mb-2">Solution <span style="font-size: 0.8rem; font-weight: normal; color: #666;">(Double-click or interact to zoom)</span></h4>
-             <div class="zoom-container">
-               <img id="detail-solution-img" class="zoomable-image" src="" alt="Solution" />
+             <div class="zoom-container" id="detail-solution-images">
              </div>
           </div>
         </div>
